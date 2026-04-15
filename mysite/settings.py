@@ -127,3 +127,8 @@ LOGIN_REDIRECT_URL ="home"
 LOGOUT_REDIRECT_URL="home"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+SPOTIFY_CLIENT_ID = 'your_client_id_here'
+SPOTIFY_CLIENT_SECRET = 'your_client_secret_here'
+SPOTIFY_REDIRECT_URI = 'http://localhost:8000/accounts/spotify/callback/'
+SPOTIFY_SCOPES = 'user-read-email streaming user-read-private'
