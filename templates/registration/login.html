@@ -1,13 +1,123 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Login{% endblock %}
 
 {% block content %}
+<style>
+  body {
+    background: #000000;
+  }
+
+  .mobile-container {
+    background: #000000;
+    box-shadow: 0 10px 30px rgba(3, 19, 166, 0.35);
+    border: 1px solid #6c5ce7;
+  }
+
+  .logo {
+    width: 100%;
+    max-width: 300px;
+    margin: 0;
+    display: block;
+    filter: drop-shadow(0 10px 20px rgba(3, 19, 166, 0.25));
+  }
+
+  .logo-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    background: #000000;
+  }
+
+  h2 {
+    margin: 0 0 18px;
+    color: #FFFFFF;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+  }
+
+  form p {
+    margin: 0;
+  }
+
+  label {
+    display: block;
+    margin: 0 0 8px;
+    color: #FFFFFF;
+    font-size: 14px;
+  }
+
+  input {
+    background: #0D0D0D;
+    border: 1px solid #6c5ce7;
+    color: #FFFFFF;
+    outline: none;
+  }
+
+  input:focus {
+    border-color: #10dcac;
+    box-shadow: 0 0 0 3px rgba(16, 220, 172, 0.2);
+  }
+
+  button {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #0313a6;
+    color: #FFFFFF;
+  }
+
+  button:hover {
+    background: #6c5ce7;
+  }
+
+  a {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: transparent;
+    border: 1px solid #0313a6;
+    color: #FFFFFF;
+  }
+
+  a:hover {
+    border-color: #10dcac;
+    color: #10dcac;
+  }
+
+  .password-reset-link {
+    width: auto;
+    padding: 10px 12px;
+    font-size: 14px;
+    border-color: #6c5ce7;
+  }
+
+  .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: #10dcac;
+  }
+</style>
+
+<div class="logo-wrap">
+  <img class="logo" src="{% static 'img/sotd-logo.png' %}" alt="Song Of The Day" />
+</div>
+
 <h2>Log In</h2>
 <form method="post">
   {% csrf_token %}
-  {{ form }}
+  {{ form.as_p }}
   <button type="submit">Log In </button>
 </form>
-<p><a href="{% url 'password_reset' %}">Password Reset</a></p>
+<p><a class="password-reset-link" href="{% url 'password_reset' %}">Password Reset</a></p>
 {% endblock %}

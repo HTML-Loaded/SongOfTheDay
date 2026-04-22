@@ -32,6 +32,30 @@
       overflow-y: auto;
     }
 
+    .mobile-container {
+      scrollbar-color: #6c5ce7 #0D0D0D;
+      scrollbar-width: thin;
+    }
+
+    .mobile-container::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .mobile-container::-webkit-scrollbar-track {
+      background: #0D0D0D;
+      border-radius: 999px;
+    }
+
+    .mobile-container::-webkit-scrollbar-thumb {
+      background: #6c5ce7;
+      border-radius: 999px;
+      border: 2px solid #0D0D0D;
+    }
+
+    .mobile-container::-webkit-scrollbar-thumb:hover {
+      background: #10dcac;
+    }
+
     main {
       flex: 1;
       display: flex;
