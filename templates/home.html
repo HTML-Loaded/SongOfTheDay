@@ -9,6 +9,7 @@
 {% if user.is_authenticated %}
   <div class="home-title">Hi {{ user.username }}!</div>
   <div class="actions">
+    <a class="primary-link" href="{% url 'spotify_settings' %}">Account</a>
     <a class="primary-link" href="{% url 'password_change' %}">Password Change</a>
     <form action="{% url 'logout' %}" method="post">
       {% csrf_token %}

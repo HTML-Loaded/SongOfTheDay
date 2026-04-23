@@ -16,6 +16,22 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+def _load_dotenv(path):
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+
+        key, value = line.split('=', 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+_load_dotenv = (BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -139,7 +155,6 @@ LOGOUT_REDIRECT_URL="home"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-SPOTIFY_CLIENT_ID = 'your_client_id_here'
-SPOTIFY_CLIENT_SECRET = 'your_client_secret_here'
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REDIRECT_URI = 'http://localhost:8000/accounts/spotify/callback/'
-SPOTIFY_SCOPES = 'user-read-email streaming user-read-private'

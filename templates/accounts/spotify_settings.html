@@ -1,0 +1,24 @@
+<!-- templates/accounts/spotify_settings -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Spotify Integration{% endblock %}
+
+{% block content %}
+
+{% if profile %}
+    <p>Connected to Spotify</p>
+    <p><strong>Spotify User ID:</strong> {{ profile.spotify_user_id }}</p>
+{% else %}
+    <p>You are not connected to Spotify.</p>
+
+    <div class="actions">
+        <a class="primary-link" href="{% url 'connect_spotify' %}">
+            Connect to Spotify
+        </a>
+    </div>
+{% endif %}
+
+{% endblock %}
+
+
