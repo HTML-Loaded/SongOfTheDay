@@ -6,99 +6,7 @@
 
 {% block content %}
 
-<style>
-  body {
-    background: #000000;
-  }
-
-  .mobile-container {
-    background: #000000;
-    box-shadow: 0 10px 30px rgba(3, 19, 166, 0.35);
-    border: 1px solid #6c5ce7;
-  }
-
-  .home-title {
-    margin: 0 0 18px;
-    color: #FFFFFF;
-    letter-spacing: 0.5px;
-    font-size: 20px;
-  }
-
-  .home-subtitle {
-    margin: 0 0 18px;
-    color: #FFFFFF;
-    opacity: 0.9;
-  }
-
-  .actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .logo {
-    width: 100%;
-    max-width: none;
-    width: 130%;
-    margin: 0;
-    display: block;
-    filter: drop-shadow(0 10px 20px rgba(3, 19, 166, 0.25));
-  }
-
-  .logo-wrap {
-    width: 100%;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 14px;
-    background: #000000;
-  }
-
-  a {
-    width: 100%;
-    max-width: 240px;
-    padding: 10px 12px;
-    font-size: 14px;
-    background: transparent;
-    border: 1px solid #0313a6;
-    color: #FFFFFF;
-  }
-
-  a:hover {
-    border-color: #10dcac;
-    color: #10dcac;
-  }
-
-  .primary-link {
-    background: #0313a6;
-    border-color: #0313a6;
-  }
-
-  .primary-link:hover {
-    background: #6c5ce7;
-    border-color: #6c5ce7;
-    color: #FFFFFF;
-  }
-
-  button {
-    width: 100%;
-    max-width: 240px;
-    padding: 10px 12px;
-    font-size: 14px;
-    background: #0313a6;
-    color: #FFFFFF;
-  }
-
-  button:hover {
-    background: #6c5ce7;
-  }
-</style>
-
 {% if user.is_authenticated %}
-  <div class="logo-wrap">
-    <img class="logo" src="{% static 'img/sotd-logo.png' %}" alt="Song Of The Day" />
-  </div>
   <div class="home-title">Hi {{ user.username }}!</div>
   <div class="actions">
     <a class="primary-link" href="{% url 'password_change' %}">Password Change</a>
@@ -108,9 +16,6 @@
     </form>
   </div>
 {% else %}
-  <div class="logo-wrap">
-    <img class="logo" src="{% static 'img/sotd-logo.png' %}" alt="Song Of The Day" />
-  </div>
   <div class="home-subtitle">You are not logged in</div>
   <div class="actions">
     <a class="primary-link" href="{% url 'login' %}">Log In</a>

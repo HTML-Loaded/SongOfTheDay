@@ -1,37 +1,62 @@
 <!-- templates/base.html -->
-<!--formatting for html pages-->
 
 <!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}Django Auth Tutorial{% endblock %}</title>
+
+  <!-- Page title block: child templates override this -->
+  <title>{% block title %}My App{% endblock %}</title>
+
+  <!-- Required for Django static file resolution (logo, css, etc.) -->
+  {% load static %}
 
   <style>
+    /* ===== ROOT LAYOUT ===== */
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f2f4f8;
+
+      /* Full black background for neon theme */
+      background: #000000;
+
+      /* Center the mobile container horizontally + vertically */
       display: flex;
       justify-content: center;
       align-items: center;
+
+      /* Ensures full viewport height coverage */
       min-height: 100vh;
     }
 
+    /* ===== MAIN APP CONTAINER (SIMULATED MOBILE VIEW) ===== */
     .mobile-container {
       width: 100%;
-      max-width: 420px;
-      height: 90vh;
-      background: white;
+      max-width: 420px;   /* locks layout to mobile width */
+      height: 90vh;       /* prevents full screen overflow */
+
+      background: #000000;
+
+      /* rounded "phone-like" container */
       border-radius: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+
+      /* neon glow shadow */
+      box-shadow: 0 10px 30px rgba(3, 19, 166, 0.35);
+
+      /* neon border */
+      border: 1px solid #6c5ce7;
+
       padding: 30px 20px;
+
       display: flex;
       flex-direction: column;
+
+      /* enables scrolling inside container only */
       overflow-y: auto;
     }
 
+    /* ===== CUSTOM SCROLLBAR (NEON STYLE) ===== */
     .mobile-container {
       scrollbar-color: #6c5ce7 #0D0D0D;
       scrollbar-width: thin;
@@ -49,65 +74,242 @@
     .mobile-container::-webkit-scrollbar-thumb {
       background: #6c5ce7;
       border-radius: 999px;
+
+      /* creates spacing illusion around thumb */
       border: 2px solid #0D0D0D;
     }
 
     .mobile-container::-webkit-scrollbar-thumb:hover {
-      background: #10dcac;
+      background: #10dcac; /* hover accent (green neon) */
     }
 
+    /* ===== MAIN CONTENT AREA ===== */
     main {
       flex: 1;
+
+      /* vertical stacking of page content */
       display: flex;
       flex-direction: column;
+
+      /* centers content vertically when space allows */
       justify-content: center;
     }
 
-    /* shared UI styles */
-    a {
-      display: inline-block;
-      padding: 12px;
-      background: #2d6cdf;
-      color: white;
-      text-decoration: none;
-      border-radius: 10px;
-      text-align: center;
-    }
-    a:hover {
-      background: #1f56b8;
+    /* ===== LOGO SECTION ===== */
+    .logo-wrap {
+      width: 100%;
+
+      /* horizontal centering of logo */
+      display: flex;
+      justify-content: center;
+
+      margin-bottom: 10px;
+
+      background: #000000;
     }
 
-    button {
-      padding: 12px;
-      border: none;
-      text-decoration: none;
-      border-radius: 10px;
-      background: #2d6cdf;
+    .logo {
+      width: 100%;
+      max-width: 300px;
+      margin: 0;
+      display: block;
+
+      /* glow effect under logo */
+      filter: drop-shadow(0 10px 20px rgba(3, 19, 166, 0.25));
+    }
+
+    /* ===== HEADINGS ===== */
+    h2 {
+      margin: 0 0 18px;
+
+      color: #FFFFFF;
+
+      /* slight spacing for modern UI feel */
+      letter-spacing: 0.5px;
+
       text-align: center;
-      color: white;
-      font-size: 16px;
+    }
+
+    /* ===== FORM LAYOUT ===== */
+    form {
+      display: flex;
+      flex-direction: column;
+
+      /* consistent spacing between inputs */
+      gap: 12px;
+
+      margin: 0;
+    }
+
+    /* Django forms often wrap inputs in <p> tags */
+    form p {
+      margin: 0;
+    }
+
+    /* ===== LABELS ===== */
+    label {
+      display: block;
+
+      margin: 0 0 8px;
+
+      color: #FFFFFF;
+
+      font-size: 14px;
+    }
+
+    /* ===== INPUT FIELDS ===== */
+    input, select, textarea {
+      width: 100%;
+
+      padding: 10px;
+
+      border-radius: 8px;
+
+      box-sizing: border-box;
+
+      /* dark input background */
+      background: #0D0D0D;
+
+      /* neon border */
+      border: 1px solid #6c5ce7;
+
+      color: #FFFFFF;
+
+      outline: none;
+    }
+
+    /* focus state: green neon glow */
+    input:focus {
+      border-color: #10dcac;
+
+      /* outer glow ring */
+      box-shadow: 0 0 0 3px rgba(16, 220, 172, 0.2);
+    }
+
+    /* ===== PRIMARY ACTION BUTTON ===== */
+    button {
+      width: 100%;
+
+      padding: 10px 12px;
+
+      border: none;
+      border-radius: 10px;
+
+      font-size: 14px;
+
+      /* deep blue base */
+      background: #0313a6;
+
+      color: #FFFFFF;
+
       cursor: pointer;
     }
 
+    /* hover shifts toward purple neon */
     button:hover {
-      background: #1f56b8;
+      background: #6c5ce7;
     }
 
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
+    /* ===== LINK BUTTONS (SECONDARY ACTIONS) ===== */
+    a {
+      display: inline-block;
+
+      width: 95%;
+
+      padding: 10px 12px;
+
+      border-radius: 10px;
+
+      font-size: 14px;
+
+      /* transparent for outlined look */
+      background: transparent;
+
+      border: 1px solid #0313a6;
+
+      color: #FFFFFF;
+
+      text-decoration: none;
+
+      text-align: center;
     }
+
+    /* hover switches to neon green accent */
+    a:hover {
+      border-color: #10dcac;
+      color: #10dcac;
+    }
+
+    /* special-case link (e.g. password reset) */
+    .password-reset-link {
+      width: auto;
+      border-color: #6c5ce7;
+    }
+
+    /* ===== DJANGO FORM ERRORS ===== */
+    .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: #10dcac;
+  }
+
+  .helptext {
+    display: block;
+    margin-top: 8px;
+    color: #10dcac;
+    font-size: 13px;
+  }
+
+  .pw-rules {
+    display: none;
+    margin: 6px 0 0;
+    padding: 10px 12px;
+    border: 1px solid #6c5ce7;
+    border-radius: 10px;
+  }
+
+  .pw-rules ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #FFFFFF;
+    opacity: 0.9;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .pw-rules li {
+    margin: 4px 0;
+  }
+
+  .pw-rules li.ok {
+    color: #10dcac;
+    opacity: 1;
+  }
+  
   </style>
 </head>
 
 <body>
   <div class="mobile-container">
+
+    <!-- ===== HEADER BLOCK =====
+         Default: shows logo
+         Override in child templates to remove/replace header
+    -->
+    {% block header %}
+    <div class="logo-wrap">
+      <img class="logo" src="{% static 'img/sotd-logo.png' %}" alt="Song Of The Day" />
+    </div>
+    {% endblock %}
+
+    <!-- ===== MAIN CONTENT BLOCK =====
+         All page-specific content is injected here
+    -->
     <main>
       {% block content %}{% endblock %}
     </main>
+
   </div>
 </body>
 
