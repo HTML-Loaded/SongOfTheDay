@@ -16,6 +16,7 @@ def connect_spotify(request):
         f"&redirect_uri={settings.SPOTIFY_REDIRECT_URI}"
         "&scope=streaming user-read-email"
     )
+    return redirect(auth_url)
 
 @login_required
 def spotify_callback(request):
@@ -25,12 +26,17 @@ def spotify_callback(request):
         return redirect("spotify_settings")
     
     data = exchange_code_for_token(code)
+    expires_at = now() + timedelta(seconds=data["expires_in"])
 
-    profile, _ = SpotifyProfile.objects.get_or_create(user=request.user)
+    try:
+        profile = SpotifyProfile.objects.get(user=request.user)
+    except SpotifyProfile.DoesNotExist:
+        profile = SpotifyProfile(user=request.user)
 
     profile.access_token = data["access_token"]
-    profile.refresh_token = data.get("refresh_token", profile.refresh_token)
-    profile.token_expires_at = now() + timedelta(seconds=data["expires_in"])
+    profile.refresh_token = data.get("refresh_token")
+    profile.token_expires_at = expires_at
+
     profile.save()
 
     return redirect("spotify_settings")

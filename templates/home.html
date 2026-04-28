@@ -7,7 +7,7 @@
 {% block content %}
 
 {% if user.is_authenticated %}
-  <div class="home-title">Hi {{ user.username }}!</div>
+  <div style="color:white; font-size:30px;">Hi {{ user.username }}!</div>
   <div class="actions">
     <a class="primary-link" href="{% url 'spotify_settings' %}">Account</a>
     <a class="primary-link" href="{% url 'password_change' %}">Password Change</a>
@@ -17,7 +17,7 @@
     </form>
   </div>
 {% else %}
-  <div class="home-subtitle">You are not logged in</div>
+  <div style="color:white; font-size:30px;">You are not logged in</div>
   <div class="actions">
     <a class="primary-link" href="{% url 'login' %}">Log In</a>
     <a href="{% url 'signup' %}">Sign Up</a>

@@ -11,6 +11,11 @@ class SpotifyProfile(models.Model):
     refresh_token = models.TextField()
 
     token_expires_at = models.DateTimeField()
+    # models.DateTimeField(null=True, blank=True)
 
     def is_token_expired(self):
         return timezone.now() >= self.token_expires_at
+    
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True)

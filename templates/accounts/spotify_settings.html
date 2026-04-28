@@ -2,13 +2,13 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Spotify Integration{% endblock %}
+{% block title %} Account {% endblock %}
 
 {% block content %}
 
-{% if profile %}
-    <p>Connected to Spotify</p>
-    <p><strong>Spotify User ID:</strong> {{ profile.spotify_user_id }}</p>
+{% if user.is_authenticated %}
+    <h2>Account</h2>
+    <p>Spotify User ID: {{ profile.spotify_user_id }}</p>
 {% else %}
     <p>You are not connected to Spotify.</p>
 
