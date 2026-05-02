@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Friends{% endblock %}
+
+{% block content %}
+
+<h2>Friends</h2>
+
+{% if error %}
+    <p>{{ error }}</p>
+{% endif %}
+{% if success %}
+    <p>{{ success }}</p>
+{% endif %}
+
+<form method="post" action="{% url 'send_friend_request' %}">
+    {% csrf_token %}
+    <label for="username">Add friend by username</label>
+    <input id="username" name="username" type="text" placeholder="username" />
+    <button type="submit">Send request</button>
+</form>
+
+{% if pending_received %}
+    <div class="section">
+    <h3>Requests</h3>
+    <ul class="card-list">
+        {% for request in pending_received %}
+            <li class="card">
+                <div class="card-title">{{ request.from_user.username }}</div>
+                <div class="card-actions">
+                    <form class="inline-form" method="post" action="{% url 'accept_friend_request' request.id %}">
+                        {% csrf_token %}
+                        <button class="btn-small" type="submit">Accept</button>
+                    </form>
+                    <form class="inline-form" method="post" action="{% url 'decline_friend_request' request.id %}">
+                        {% csrf_token %}
+                        <button class="btn-small btn-danger" type="submit">Decline</button>
+                    </form>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    </div>
+{% endif %}
+
+{% if pending_sent %}
+    <div class="section">
+    <h3>Sent</h3>
+    <ul class="card-list">
+        {% for request in pending_sent %}
+            <li class="card">
+                <div class="card-title">{{ request.to_user.username }}</div>
+                <div class="card-actions">
+                    <form class="inline-form" method="post" action="{% url 'cancel_friend_request' request.id %}">
+                        {% csrf_token %}
+                        <button class="btn-small btn-danger" type="submit">Cancel</button>
+                    </form>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    </div>
+{% endif %}
+
+{% if friends %}
+    <div class="section">
+    <h3>Friends</h3>
+    <ul class="card-list">
+        {% for friend in friends %}
+            <li class="card">
+                <div class="card-title">{{ friend.username }}</div>
+                <div class="card-actions"></div>
+            </li>
+        {% endfor %}
+    </ul>
+    </div>
+{% else %}
+    <p>No friends yet.</p>
+{% endif %}
+
+{% endblock %}

@@ -6,19 +6,16 @@
 
 {% block content %}
 
-{% if user.is_authenticated %}
-    <h2>Account</h2>
+<h2>Account</h2>
+
+{% if connected %}
     <p>Spotify User ID: {{ profile.spotify_user_id }}</p>
 {% else %}
     <p>You are not connected to Spotify.</p>
-
     <div class="actions">
-        <a class="primary-link" href="{% url 'connect_spotify' %}">
-            Connect to Spotify
-        </a>
+        <a class="primary-link" href="{% url 'connect_spotify' %}">Connect to Spotify</a>
     </div>
 {% endif %}
 
 {% endblock %}
-
 

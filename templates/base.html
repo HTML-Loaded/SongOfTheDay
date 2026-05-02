@@ -18,6 +18,8 @@
       margin: 0;
       font-family: Arial, sans-serif;
 
+      color: #FFFFFF;
+
       /* Full black background for neon theme */
       background: #000000;
 
@@ -128,6 +130,91 @@
       letter-spacing: 0.5px;
 
       text-align: center;
+    }
+
+    h3 {
+      margin: 16px 0 10px;
+      color: #FFFFFF;
+      letter-spacing: 0.4px;
+      text-align: center;
+    }
+
+    p, li {
+      color: #FFFFFF;
+      opacity: 0.9;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .card-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      background: #0D0D0D;
+      border: 1px solid #6c5ce7;
+      box-shadow: 0 8px 22px rgba(3, 19, 166, 0.18);
+    }
+
+    .card-title {
+      color: #FFFFFF;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .inline-form {
+      display: inline;
+      margin: 0;
+    }
+
+    .btn-small {
+      width: auto;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid #0313a6;
+      color: #FFFFFF;
+    }
+
+    .btn-danger:hover {
+      border-color: #10dcac;
+      color: #10dcac;
+      background: transparent;
+    }
+
+    .section {
+      margin-top: 18px;
     }
 
     /* ===== FORM LAYOUT ===== */
