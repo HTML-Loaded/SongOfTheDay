@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Feed{% endblock %}
+
+{% block content %}
+
+<h2>Feed</h2>
+
+{% if posted_today %}
+  <div class="notice">
+    <div><strong>Post again in</strong> <span id="cooldown-timer"></span> <span style="opacity:0.85;">(resets at midnight)</span></div>
+  </div>
+{% endif %}
+
+{% if show_post_limit_popup %}
+  <div id="post-limit-toast" class="toast">You can only share one song per day.</div>
+{% endif %}
+
+{% if error %}
+  <p>{{ error }}</p>
+{% endif %}
+
+<div class="section search-wrap">
+  <input id="spotify-search" type="text" placeholder="Search Spotify (song or artist)" autocomplete="off" />
+  <div id="spotify-results" class="search-popout" style="display:none;"></div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <input id="tz_offset_field" name="tz_offset" type="hidden" />
+  <input name="track_input" type="text" placeholder="Spotify track URL or URI" />
+  <textarea name="caption" rows="3" placeholder="Add a caption (optional)"></textarea>
+  <button id="share-btn" type="submit">Share</button>
+</form>
+
+{% if shares %}
+  <div class="section">
+    <ul class="card-list">
+      {% for item in shares %}
+        <li class="card" style="flex-direction: column; align-items: stretch;">
+          <div style="display:flex; justify-content: space-between; width:100%; gap: 10px;">
+            <div>
+              <div class="card-title">{{ item.share.user.username }} shared</div>
+              <div style="opacity: 0.85; font-size: 13px;" class="js-local-datetime" data-iso="{{ item.share.created_at|date:'c' }}">{{ item.share.created_at }}</div>
+            </div>
+          </div>
+
+          {% if item.embed_url %}
+            <div style="margin-top: 10px;">
+              <iframe style="border-radius: 12px" src="{{ item.embed_url }}" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            </div>
+          {% else %}
+            <p style="margin: 10px 0 0;">{{ item.share.track_input }}</p>
+          {% endif %}
+
+          {% if item.share.caption %}
+            <p style="margin: 10px 0 0;">{{ item.share.caption }}</p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<div class="actions" style="margin-top: 14px;">
+  <a href="{% url 'home' %}">Home</a>
+</div>
+
+<script>
+  (function () {
+    const tzField = document.getElementById('tz_offset_field');
+    if (tzField) tzField.value = String(new Date().getTimezoneOffset());
+
+    const waitSeconds = {{ wait_seconds|default:0 }};
+    const timerEl = document.getElementById('cooldown-timer');
+    if (timerEl && waitSeconds >= 0) {
+      const nowLocal = new Date();
+      const nextMidnight = new Date(nowLocal);
+      nextMidnight.setHours(24, 0, 0, 0);
+      let remaining = Math.max(0, Math.floor((nextMidnight.getTime() - nowLocal.getTime()) / 1000));
+      const pad = (n) => String(n).padStart(2, '0');
+      const tick = () => {
+        const h = Math.floor(remaining / 3600);
+        const m = Math.floor((remaining % 3600) / 60);
+        const s = remaining % 60;
+        timerEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+        remaining = Math.max(0, remaining - 1);
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    document.querySelectorAll('.js-local-datetime[data-iso]').forEach((el) => {
+      const iso = el.getAttribute('data-iso');
+      if (!iso) return;
+      const dt = new Date(iso);
+      if (isNaN(dt.getTime())) return;
+      el.textContent = dt.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    });
+
+    const toast = document.getElementById('post-limit-toast');
+    if (toast) {
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    const shareBtn = document.getElementById('share-btn');
+    const shareForm = shareBtn ? shareBtn.closest('form') : null;
+    if (shareBtn && shareForm) {
+      shareForm.addEventListener('submit', () => {
+        if (tzField) tzField.value = String(new Date().getTimezoneOffset());
+        shareBtn.classList.remove('btn-burst');
+        void shareBtn.offsetWidth;
+        shareBtn.classList.add('btn-burst');
+      });
+    }
+
+    const input = document.getElementById('spotify-search');
+    const results = document.getElementById('spotify-results');
+    const trackInput = document.querySelector('input[name="track_input"]');
+    if (!input || !results || !trackInput) return;
+
+    let lastRequestId = 0;
+    let timer = null;
+
+    function escapeHtml(text) {
+      return (text || '').replace(/[&<>"]/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;'
+      }[ch]));
+    }
+
+    function setVisible(visible) {
+      results.style.display = visible ? 'block' : 'none';
+    }
+
+    function render(items) {
+      if (!items.length) {
+        results.innerHTML = '';
+        setVisible(false);
+        return;
+      }
+
+      const html = items.map((t) => {
+        const title = `${t.name || ''}${t.artists ? ' — ' + t.artists : ''}`;
+        const img = t.image ? `<img src="${escapeHtml(t.image)}" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;" />` : '';
+        return `
+          <div class="card" style="cursor:pointer;" data-uri="${escapeHtml(t.uri || '')}">
+            <div style="display:flex; align-items:center; gap: 10px; width: 100%;">
+              ${img}
+              <div style="min-width:0;">
+                <div class="card-title">${escapeHtml(title)}</div>
+                ${t.album ? `<div style="opacity:0.85; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.album)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      results.innerHTML = `<div class="card-list">${html}</div>`;
+      setVisible(true);
+
+      results.querySelectorAll('[data-uri]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const uri = el.getAttribute('data-uri');
+          if (!uri) return;
+          trackInput.value = uri;
+          trackInput.focus();
+          setVisible(false);
+        });
+      });
+    }
+
+    async function search(q, requestId) {
+      try {
+        const resp = await fetch(`{% url 'spotify_search' %}?q=${encodeURIComponent(q)}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+
+        if (requestId !== lastRequestId) return;
+
+        if (resp.status === 401) {
+          results.innerHTML = '<p>Connect Spotify to search.</p>';
+          setVisible(true);
+          return;
+        }
+
+        if (!resp.ok) {
+          results.innerHTML = '<p>Search failed. Try again.</p>';
+          setVisible(true);
+          return;
+        }
+
+        const data = await resp.json();
+        render((data && data.tracks) || []);
+      } catch (e) {
+        if (requestId !== lastRequestId) return;
+        results.innerHTML = '<p>Search failed. Try again.</p>';
+        setVisible(true);
+      }
+    }
+
+    input.addEventListener('input', () => {
+      const q = (input.value || '').trim();
+      clearTimeout(timer);
+
+      if (!q) {
+        results.innerHTML = '';
+        setVisible(false);
+        return;
+      }
+
+      timer = setTimeout(() => {
+        lastRequestId += 1;
+        search(q, lastRequestId);
+      }, 250);
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => setVisible(false), 150);
+    });
+
+    input.addEventListener('focus', () => {
+      if ((results.innerHTML || '').trim()) setVisible(true);
+    });
+  })();
+</script>
+
+{% endblock %}

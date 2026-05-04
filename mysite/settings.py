@@ -142,6 +142,6 @@ LOGOUT_REDIRECT_URL="home"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_CLIENT_ID = (os.getenv("SPOTIFY_CLIENT_ID") or "").strip() or None
+SPOTIFY_CLIENT_SECRET = (os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip() or None
 SPOTIFY_REDIRECT_URI = 'http://127.0.0.1:8000/accounts/callback/'

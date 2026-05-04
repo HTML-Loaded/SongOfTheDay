@@ -3,19 +3,28 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.utils.timezone import now
 from datetime import timedelta
+from urllib.parse import urlencode
 from .services import exchange_code_for_token
 from .models import SpotifyProfile
 
 # Create your views here.
 @login_required
 def connect_spotify(request):
-    auth_url = (
-        "https://accounts.spotify.com/authorize"
-        f"?client_id={settings.SPOTIFY_CLIENT_ID}"
-        "&response_type=code"
-        f"&redirect_uri={settings.SPOTIFY_REDIRECT_URI}"
-        "&scope=streaming user-read-email"
-    )
+    if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
+        profile = SpotifyProfile.objects.filter(user=request.user).first()
+        return render(request, "accounts/spotify_settings.html", {
+            "profile": profile,
+            "connected": bool(profile and profile.access_token),
+            "error": "Spotify is not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in your .env.",
+        })
+
+    params = {
+        "client_id": settings.SPOTIFY_CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
+        "scope": "streaming user-read-email",
+    }
+    auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return redirect(auth_url)
 
 @login_required

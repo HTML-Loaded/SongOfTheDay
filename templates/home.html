@@ -7,18 +7,9 @@
 {% block content %}
 
 {% if user.is_authenticated %}
-  <div style="color:white; font-size:30px;">Hi {{ user.username }}!</div>
-  <div class="actions">
-    <a class="primary-link" href="{% url 'spotify_settings' %}">Account</a>
-    <a class="primary-link" href="{% url 'friends_list' %}">Friends List</a>
-    <a class="primary-link" href="{% url 'password_change' %}">Password Change</a>
-    <form action="{% url 'logout' %}" method="post">
-      {% csrf_token %}
-      <button type="submit">Log Out</button>
-    </form>
-  </div>
+  <div class="greeting">HI, {{ user.username }}</div>
 {% else %}
-  <div style="color:white; font-size:30px;">You are not logged in</div>
+  <div class="greeting">You are not logged in</div>
   <div class="actions">
     <a class="primary-link" href="{% url 'login' %}">Log In</a>
     <a href="{% url 'signup' %}">Sign Up</a>

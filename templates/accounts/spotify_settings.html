@@ -8,6 +8,10 @@
 
 <h2>Account</h2>
 
+{% if error %}
+    <p>{{ error }}</p>
+{% endif %}
+
 {% if connected %}
     <p>Spotify User ID: {{ profile.spotify_user_id }}</p>
 {% else %}
@@ -18,4 +22,3 @@
 {% endif %}
 
 {% endblock %}
-
