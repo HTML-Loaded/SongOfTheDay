@@ -39,12 +39,21 @@
     <ul class="card-list">
       {% for item in shares %}
         <li class="card" style="flex-direction: column; align-items: stretch;">
-          <div style="display:flex; justify-content: space-between; width:100%; gap: 10px;">
-            <div>
-              <div class="card-title">{{ item.share.user.username }} shared</div>
-              <div style="opacity: 0.85; font-size: 13px;" class="js-local-datetime" data-iso="{{ item.share.created_at|date:'c' }}">{{ item.share.created_at }}</div>
+            <div style="display:flex; justify-content: space-between; width:100%; gap: 10px;">
+              <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+                {% if item.share.user.profile.get_avatar_url %}
+                  <img src="{{ item.share.user.profile.get_avatar_url }}" alt="" style="width:36px;height:36px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+                {% else %}
+                  <div style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 14px;">
+                    {{ item.share.user.username|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+                <div style="min-width:0;">
+                  <div class="card-title">{{ item.share.user.username }} shared</div>
+                  <div style="opacity: 0.85; font-size: 13px;" class="js-local-datetime" data-iso="{{ item.share.created_at|date:'c' }}">{{ item.share.created_at }}</div>
+                </div>
+              </div>
             </div>
-          </div>
 
           {% if item.embed_url %}
             <div style="margin-top: 10px;">
@@ -62,10 +71,6 @@
     </ul>
   </div>
 {% endif %}
-
-<div class="actions" style="margin-top: 14px;">
-  <a href="{% url 'home' %}">Home</a>
-</div>
 
 <script>
   (function () {

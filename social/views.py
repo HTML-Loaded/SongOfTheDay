@@ -14,7 +14,7 @@ def friends_list(request):
     friendships = (
         Friendship.objects.filter(status="accepted")
         .filter(Q(from_user=request.user) | Q(to_user=request.user))
-        .select_related("from_user", "to_user")
+        .select_related("from_user", "to_user", "from_user__profile", "to_user__profile", "from_user__spotifyprofile", "to_user__spotifyprofile")
         .order_by("created_at")
     )
 
@@ -31,12 +31,12 @@ def friends_list(request):
 
     pending_received = (
         Friendship.objects.filter(to_user=request.user, status="pending")
-        .select_related("from_user")
+        .select_related("from_user", "from_user__profile", "from_user__spotifyprofile")
         .order_by("created_at")
     )
     pending_sent = (
         Friendship.objects.filter(from_user=request.user, status="pending")
-        .select_related("to_user")
+        .select_related("to_user", "to_user__profile", "to_user__spotifyprofile")
         .order_by("created_at")
     )
 

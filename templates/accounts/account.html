@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Account{% endblock %}
+
+{% block content %}
+
+<h2>Account</h2>
+
+<div class="section">
+  <div class="card" style="gap: 14px;">
+    <div style="display:flex; align-items:center; gap: 12px; min-width:0;">
+      {% if profile.get_avatar_url %}
+        <img src="{{ profile.get_avatar_url }}" alt="" style="width:56px;height:56px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+      {% else %}
+        <div style="width:56px;height:56px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800;">
+          {{ request.user.username|slice:":1"|upper }}
+        </div>
+      {% endif %}
+      <div style="min-width:0;">
+        <div class="card-title">{{ request.user.username }}</div>
+        <div style="opacity:0.85; font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{% if profile.bio %}{{ profile.bio }}{% else %}No bio yet.{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Profile picture</h3>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="upload_avatar" />
+    <label for="avatar_image">Upload a picture</label>
+    <input id="avatar_image" type="file" name="avatar_image" accept="image/*" />
+    <button type="submit">Upload</button>
+  </form>
+
+  {% if profile.avatar_image %}
+    <form method="post" style="margin-top: 10px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="use_uploaded_avatar" />
+      <button type="submit">Use uploaded picture</button>
+    </form>
+  {% endif %}
+
+  {% if connected %}
+    <form method="post" style="margin-top: 10px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="use_spotify_avatar" />
+      <button type="submit">Use Spotify picture</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h3>Bio</h3>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="update_bio" />
+    <textarea name="bio" rows="3" placeholder="Tell people about you">{{ profile.bio }}</textarea>
+    <button type="submit">Save bio</button>
+  </form>
+</div>
+
+<div class="section">
+  <h3>Spotify</h3>
+
+  {% if connected %}
+    <div class="card" style="flex-direction:column; align-items:stretch;">
+      <div class="card-title">Connected</div>
+      <div style="opacity:0.85; font-size: 13px;">Spotify ID: {% if spotify_profile.spotify_user_id %}{{ spotify_profile.spotify_user_id }}{% else %}—{% endif %}</div>
+      {% if spotify_profile.spotify_avatar_url %}
+        <div style="margin-top: 10px; display:flex; align-items:center; gap: 10px;">
+          <img src="{{ spotify_profile.spotify_avatar_url }}" alt="" style="width:44px;height:44px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+          <div style="opacity:0.85; font-size: 13px;">{% if spotify_profile.spotify_display_name %}{{ spotify_profile.spotify_display_name }}{% else %}Spotify profile{% endif %}</div>
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <p>You are not connected to Spotify.</p>
+    <div class="actions">
+      <a class="primary-link" href="{% url 'connect_spotify' %}">Connect to Spotify</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h3>Password</h3>
+  <div class="card">
+    <div class="card-title">********</div>
+    <div class="card-actions">
+      <a class="primary-link" href="{% url 'password_change' %}">Change password</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

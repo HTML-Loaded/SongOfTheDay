@@ -24,3 +24,14 @@ def refresh_access_token(refresh_token):
         auth=(settings.SPOTIFY_CLIENT_ID, settings.SPOTIFY_CLIENT_SECRET),
     )
     return response.json()
+
+
+def get_spotify_me(access_token: str):
+    response = requests.get(
+        "https://api.spotify.com/v1/me",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+        },
+        timeout=10,
+    )
+    return response

@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 
 import requests
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.timezone import now
@@ -10,6 +11,7 @@ from datetime import time as time_of_day
 
 from accounts.models import SpotifyProfile
 from accounts.services import refresh_access_token
+from social.models import Friendship
 from .models import SongShare
 
 
@@ -96,10 +98,37 @@ def feed(request):
             if not embed_url:
                 error = "Paste a Spotify track URL or a spotify:track:... URI."
             else:
-                SongShare.objects.create(user=request.user, track_input=track_input, caption=caption)
+                share, created = SongShare.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        "track_input": track_input,
+                        "caption": caption,
+                    },
+                )
+                if not created:
+                    share.track_input = track_input
+                    share.caption = caption
+                    share.created_at = now()
+                    share.save(update_fields=["track_input", "caption", "created_at"])
                 return redirect("feed")
 
-    shares = SongShare.objects.select_related("user").all()[:20]
+    friendships = Friendship.objects.filter(status="accepted").filter(
+        Q(from_user=request.user) | Q(to_user=request.user)
+    )
+    user_ids = []
+    user_ids.append(request.user.id)
+    for friendship in friendships:
+        user_ids.append(
+            friendship.to_user_id
+            if friendship.from_user_id == request.user.id
+            else friendship.from_user_id
+        )
+
+    shares = (
+        SongShare.objects.filter(user_id__in=user_ids)
+        .select_related("user", "user__profile", "user__spotifyprofile")
+        .all()[:20]
+    )
     rendered = []
     for share in shares:
         rendered.append({

@@ -7,9 +7,6 @@
 
 <h2>Friends</h2>
 
-<div class="actions">
-    <a href="{% url 'home' %}">Home</a>
-</div>
 
 {% if error %}
     <p>{{ error }}</p>
@@ -31,7 +28,16 @@
     <ul class="card-list">
         {% for request in pending_received %}
             <li class="card">
-                <div class="card-title">{{ request.from_user.username }}</div>
+                <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+                    {% if request.from_user.profile.get_avatar_url %}
+                        <img src="{{ request.from_user.profile.get_avatar_url }}" alt="" style="width:32px;height:32px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+                    {% else %}
+                        <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 13px;">
+                            {{ request.from_user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="card-title" style="min-width:0;">{{ request.from_user.username }}</div>
+                </div>
                 <div class="card-actions">
                     <form class="inline-form" method="post" action="{% url 'accept_friend_request' request.id %}">
                         {% csrf_token %}
@@ -54,7 +60,16 @@
     <ul class="card-list">
         {% for request in pending_sent %}
             <li class="card">
-                <div class="card-title">{{ request.to_user.username }}</div>
+                <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+                    {% if request.to_user.profile.get_avatar_url %}
+                        <img src="{{ request.to_user.profile.get_avatar_url }}" alt="" style="width:32px;height:32px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+                    {% else %}
+                        <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 13px;">
+                            {{ request.to_user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="card-title" style="min-width:0;">{{ request.to_user.username }}</div>
+                </div>
                 <div class="card-actions">
                     <form class="inline-form" method="post" action="{% url 'cancel_friend_request' request.id %}">
                         {% csrf_token %}
@@ -73,7 +88,16 @@
     <ul class="card-list">
         {% for friend in friends %}
             <li class="card">
-                <div class="card-title">{{ friend.username }}</div>
+                <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+                    {% if friend.profile.get_avatar_url %}
+                        <img src="{{ friend.profile.get_avatar_url }}" alt="" style="width:32px;height:32px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+                    {% else %}
+                        <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 13px;">
+                            {{ friend.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="card-title" style="min-width:0;">{{ friend.username }}</div>
+                </div>
                 <div class="card-actions"></div>
             </li>
         {% endfor %}
