@@ -9,10 +9,6 @@ __pycache__/
 .venv/
 venv/
 .venv.bak/
-Lib/
-Scripts/
-Include/
-pyvenv.cfg
 .direnv/
 .python-version
 .env.*
