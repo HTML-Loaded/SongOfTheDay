@@ -5,7 +5,7 @@
 Song Of The Day (SOTD) — Code Documentation & User Manual
 Last updated: 2026-05-11
 
-1) Overview
+## 1) Overview
 Song Of The Day is a Django web app where users connect Spotify, post one song per day with a caption, view a friends feed, react with emojis, and reply to captions.
 
 Key features
@@ -17,22 +17,21 @@ Key features
 - Replies on captions (shows username + relative time)
 - Infinite scrolling feed pagination for performance
 
-2) Quick Start (Developer)
+## 2) Quick Start (Developer)
 Prerequisites
 - Python (project includes a venv folder; you can also use your own)
 - Django and dependencies installed (see the project environment)
 
-Run locally
-1. Open a terminal in the project folder:
-   C:\Users\IvanS\OneDrive\Documents\SongOfTheDay
+### Run locally
+2.1 Open a terminal in the project folder
 
-2. Run migrations:
+2.2 Run migrations:
    python manage.py migrate
 
-3. Start the dev server:
+2.3 Start the dev server:
    python manage.py runserver
 
-4. Open:
+2.4 Open:
    http://127.0.0.1:8000/
 
 Spotify configuration
@@ -41,7 +40,7 @@ Spotify configuration
   - SPOTIFY_CLIENT_SECRET
   - SPOTIFY_REDIRECT_URI
 
-3) User Manual
+## 3) User Manual
 3.1 Sign up / Log in
 - Use the Signup page to create an account.
 - Username uniqueness is enforced case-insensitively.
@@ -82,7 +81,7 @@ Custom emoji
 - Replies must be up to 4 sentences (1–4).
 - Replies show the author’s username and a relative timestamp (e.g., “2 min ago”, “1 hour ago”, “2 days ago”).
 
-4) Codebase Guide (Developer)
+## 4) Codebase Guide (Developer)
 Project layout (high level)
 - manage.py: Django entry point
 - mysite/: project settings/urls/views
@@ -142,7 +141,7 @@ Notes on feed pagination
 3-day history cleanup
 - Each request that builds the feed queryset deletes SongShare items older than 3 days.
 
-5) Troubleshooting
+## 5) Troubleshooting
 Spotify popup keeps appearing
 - The popup appears when you are logged in but not connected.
 - If you dismiss it, the dismiss is remembered for the current browser session.
