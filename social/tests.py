@@ -2,6 +2,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.models import Profile
+from feed.models import SongShare
+
 from .models import Friendship
 
 
@@ -73,3 +76,50 @@ class FriendsListTests(TestCase):
         self.client.post(reverse("decline_friend_request", args=[friendship.id]))
 
         self.assertFalse(Friendship.objects.filter(id=friendship.id).exists())
+
+
+class FriendProfileTests(TestCase):
+    def test_requires_friendship(self):
+        alice = User.objects.create_user(username="alice", password="pw")
+        bob = User.objects.create_user(username="bob", password="pw")
+        self.client.login(username="alice", password="pw")
+
+        response = self.client.get(reverse("friend_profile", args=["bob"]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_renders_friend_profile(self):
+        alice = User.objects.create_user(username="alice", password="pw")
+        bob = User.objects.create_user(username="bob", password="pw")
+        Friendship.objects.create(from_user=alice, to_user=bob, status="accepted")
+
+        profile = Profile.objects.get(user=bob)
+        profile.bio = "hello there"
+        profile.save(update_fields=["bio"])
+        SongShare.objects.create(user=bob, track_input="spotify:track:123", caption="caption")
+
+        self.client.login(username="alice", password="pw")
+        response = self.client.get(reverse("friend_profile", args=["bob"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "hello there")
+        self.assertContains(response, "open.spotify.com/embed/track/123")
+
+    def test_now_playing_endpoint_requires_friendship(self):
+        alice = User.objects.create_user(username="alice", password="pw")
+        bob = User.objects.create_user(username="bob", password="pw")
+        self.client.login(username="alice", password="pw")
+        response = self.client.get(reverse("friend_now_playing", args=["bob"]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_friends_now_playing_requires_login(self):
+        response = self.client.get(reverse("friends_now_playing"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_friends_now_playing_lists_friends(self):
+        alice = User.objects.create_user(username="alice", password="pw")
+        bob = User.objects.create_user(username="bob", password="pw")
+        Friendship.objects.create(from_user=alice, to_user=bob, status="accepted")
+
+        self.client.login(username="alice", password="pw")
+        response = self.client.get(reverse("friends_now_playing"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("bob", (response.json().get("now_playing") or {}))

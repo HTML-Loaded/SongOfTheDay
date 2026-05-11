@@ -79,6 +79,7 @@ def _seconds_until_next_local_midnight(tz_offset_minutes: int) -> int:
 @login_required
 def feed(request):
     error = None
+    cutoff = now() - timedelta(hours=24)
     tz_offset_minutes = _get_tz_offset_minutes(request)
     latest_share = SongShare.objects.filter(user=request.user).order_by("-created_at").first()
     posted_today = False
@@ -125,7 +126,7 @@ def feed(request):
         )
 
     shares = (
-        SongShare.objects.filter(user_id__in=user_ids)
+        SongShare.objects.filter(user_id__in=user_ids, created_at__gte=cutoff)
         .select_related("user", "user__profile", "user__spotifyprofile")
         .all()[:20]
     )

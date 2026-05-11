@@ -96,7 +96,12 @@
                             {{ friend.username|slice:":1"|upper }}
                         </div>
                     {% endif %}
-                    <div class="card-title" style="min-width:0;">{{ friend.username }}</div>
+                    <div style="min-width:0;">
+                        <a class="card-title" style="min-width:0;" href="{% url 'friend_profile' friend.username %}">{{ friend.username }}</a>
+                        <div id="friend-now-{{ friend.username }}" style="opacity:0.75; font-size: 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            
+                        </div>
+                    </div>
                 </div>
                 <div class="card-actions"></div>
             </li>
@@ -105,6 +110,42 @@
     </div>
 {% else %}
     <p>No friends yet.</p>
+{% endif %}
+
+{% if friends %}
+<script>
+  (function () {
+    const endpoint = "{% url 'friends_now_playing' %}";
+    const usernames = [{% for friend in friends %}"{{ friend.username|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    function renderOne(username, np) {
+      const el = document.getElementById("friend-now-" + username);
+      if (!el) return;
+      if (!np || !np.track) {
+        el.textContent = "";
+        return;
+      }
+      const artists = (np.track.artists || []).join(", ");
+      el.textContent = "Now listening: " + (np.track.name || "") + (artists ? " — " + artists : "");
+    }
+
+    async function poll() {
+      try {
+        const resp = await fetch(endpoint, { headers: { "Accept": "application/json" } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const map = data.now_playing || {};
+        for (const u of usernames) {
+          renderOne(u, map[u]);
+        }
+      } catch (e) {
+      }
+    }
+
+    poll();
+    setInterval(poll, 12000);
+  })();
+</script>
 {% endif %}
 
 {% endblock %}

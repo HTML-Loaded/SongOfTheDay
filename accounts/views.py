@@ -4,27 +4,21 @@ from django.conf import settings
 from django.utils.timezone import now
 from datetime import timedelta
 from urllib.parse import urlencode
-from .services import exchange_code_for_token, get_spotify_me
+from .services import exchange_code_for_token, get_spotify_me, refresh_cached_top_items
 from .models import SpotifyProfile, Profile
 
 # Create your views here.
 @login_required
 def connect_spotify(request):
     if not settings.SPOTIFY_CLIENT_ID or not settings.SPOTIFY_CLIENT_SECRET:
-        spotify_profile = SpotifyProfile.objects.filter(user=request.user).first()
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        return render(request, "accounts/account.html", {
-            "profile": profile,
-            "spotify_profile": spotify_profile,
-            "connected": bool(spotify_profile and spotify_profile.access_token),
-            "error": "Spotify is not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in your .env.",
-        })
+        return redirect("account")
 
     params = {
         "client_id": settings.SPOTIFY_CLIENT_ID,
         "response_type": "code",
         "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
-        "scope": "streaming user-read-email user-read-private",
+        "scope": "streaming user-read-email user-read-private user-top-read user-read-currently-playing",
+        "prompt": "consent",
     }
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return redirect(auth_url)
@@ -64,7 +58,25 @@ def spotify_callback(request):
 def account(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
     spotify_profile, _ = SpotifyProfile.objects.get_or_create(user=request.user)
-    connected = bool(spotify_profile and spotify_profile.access_token)
+    access_token_valid = bool(spotify_profile.access_token and not spotify_profile.is_token_expired())
+    can_refresh = bool(spotify_profile.refresh_token)
+    connected = bool(access_token_valid or can_refresh)
+    needs_reconnect = bool(spotify_profile.access_token and spotify_profile.is_token_expired() and not can_refresh)
+    spotify_configured = bool(settings.SPOTIFY_CLIENT_ID and settings.SPOTIFY_CLIENT_SECRET)
+    error = ""
+    if not spotify_configured:
+        error = "Spotify is not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in your .env."
+
+    if connected:
+        refresh_short = spotify_profile.needs_top_short_refresh()
+        refresh_long = spotify_profile.needs_top_long_refresh()
+        if refresh_short or refresh_long:
+            refresh_cached_top_items(
+                spotify_profile,
+                refresh_short=refresh_short,
+                refresh_long=refresh_long,
+                limit=10,
+            )
 
     if request.method == "POST":
         if request.POST.get("action") == "update_bio":
@@ -104,4 +116,7 @@ def account(request):
         "profile": profile,
         "spotify_profile": spotify_profile,
         "connected": connected,
+        "needs_reconnect": needs_reconnect,
+        "spotify_configured": spotify_configured,
+        "error": error,
     })

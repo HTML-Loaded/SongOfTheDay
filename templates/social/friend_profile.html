@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ friend.username }}{% endblock %}
+
+{% block content %}
+
+<h2>{{ friend.username }}</h2>
+
+<div class="section">
+  <div class="card" style="gap: 14px;">
+    <div style="display:flex; align-items:center; gap: 12px; min-width:0;">
+      {% if profile.get_avatar_url %}
+        <img src="{{ profile.get_avatar_url }}" alt="" style="width:56px;height:56px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+      {% else %}
+        <div style="width:56px;height:56px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800;">
+          {{ friend.username|slice:":1"|upper }}
+        </div>
+      {% endif %}
+      <div style="min-width:0;">
+        <div class="card-title">@{{ friend.username }}</div>
+        <div style="opacity:0.85; font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{% if profile.bio %}{{ profile.bio }}{% else %}No bio yet.{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Current shared</h3>
+  {% if share and embed_url %}
+    <div class="card" style="flex-direction:column; align-items:stretch;">
+      <div style="opacity:0.8; font-size: 12px;">Shared {{ share.created_at }}</div>
+      {% if share.caption %}
+        <div style="margin-top: 6px; opacity:0.9; font-size: 13px;">{{ share.caption }}</div>
+      {% endif %}
+      <iframe style="margin-top: 10px; border-radius: 12px;" src="{{ embed_url }}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+  {% else %}
+    <div class="card" style="flex-direction:column; align-items:stretch;">
+      <div class="card-title">Nothing shared yet</div>
+      <div style="opacity:0.85; font-size: 13px;">When {{ friend.username }} posts a track, it’ll show up here.</div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h3>Current listening</h3>
+
+  <div id="now-playing-card" class="card" style="flex-direction:column; align-items:stretch;">
+    <div id="now-playing-empty" {% if now_playing and now_playing.track %}style="display:none;"{% endif %}>
+      <div class="card-title">Not listening right now</div>
+      <div style="opacity:0.85; font-size: 13px;">If they’re playing music, it’ll show here.</div>
+    </div>
+
+    <div id="now-playing-content" {% if not now_playing or not now_playing.track %}style="display:none;"{% endif %}>
+      <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+        <img id="now-playing-image" src="{% if now_playing and now_playing.track and now_playing.track.image %}{{ now_playing.track.image }}{% endif %}" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #6c5ce7; {% if not now_playing or not now_playing.track or not now_playing.track.image %}display:none;{% endif %}" />
+        <div id="now-playing-image-fallback" style="width:44px;height:44px;border-radius:10px;border:1px solid #6c5ce7;background:#0D0D0D; {% if now_playing and now_playing.track and now_playing.track.image %}display:none;{% endif %}"></div>
+        <div style="min-width:0;">
+          <div id="now-playing-title" class="card-title" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{% if now_playing and now_playing.track %}{{ now_playing.track.name }}{% endif %}</div>
+          <div id="now-playing-artists" style="opacity:0.85; font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{% if now_playing and now_playing.track %}{{ now_playing.track.artists|join:", " }}{% endif %}</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <div style="display:flex; justify-content:space-between; gap: 10px; opacity:0.8; font-size: 12px;">
+          <div id="now-playing-time">0:00</div>
+          <div id="now-playing-duration">0:00</div>
+        </div>
+        <div style="height:8px; border-radius:999px; background:#0D0D0D; border:1px solid #6c5ce7; overflow:hidden; margin-top: 6px;">
+          <div id="now-playing-progress" style="height:100%; width:0%; background:#6c5ce7;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions" style="margin-top: 10px;">
+        <a id="now-playing-link" class="primary-link" {% if now_playing and now_playing.track and now_playing.track.external_url %}href="{{ now_playing.track.external_url }}"{% else %}style="display:none;"{% endif %} target="_blank" rel="noopener">Open in Spotify</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const endpoint = "{% url 'friend_now_playing' friend.username %}";
+
+    const emptyEl = document.getElementById("now-playing-empty");
+    const contentEl = document.getElementById("now-playing-content");
+    const imageEl = document.getElementById("now-playing-image");
+    const imageFallbackEl = document.getElementById("now-playing-image-fallback");
+    const titleEl = document.getElementById("now-playing-title");
+    const artistsEl = document.getElementById("now-playing-artists");
+    const timeEl = document.getElementById("now-playing-time");
+    const durationEl = document.getElementById("now-playing-duration");
+    const progressEl = document.getElementById("now-playing-progress");
+    const linkEl = document.getElementById("now-playing-link");
+
+    function pad2(n) {
+      return n < 10 ? "0" + n : "" + n;
+    }
+
+    function fmt(ms) {
+      if (ms === null || ms === undefined) return "0:00";
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return m + ":" + pad2(s);
+    }
+
+    let baseProgressMs = 0;
+    let durationMs = 0;
+    let isPlaying = false;
+    let serverTimeMs = 0;
+    let lastTrackId = null;
+
+    function setEmpty() {
+      emptyEl.style.display = "block";
+      contentEl.style.display = "none";
+      lastTrackId = null;
+      baseProgressMs = 0;
+      durationMs = 0;
+      isPlaying = false;
+      serverTimeMs = 0;
+      timeEl.textContent = "0:00";
+      durationEl.textContent = "0:00";
+      progressEl.style.width = "0%";
+    }
+
+    function setNowPlaying(np, srvMs) {
+      const track = np && np.track ? np.track : null;
+      if (!track || !track.id) {
+        setEmpty();
+        return;
+      }
+
+      emptyEl.style.display = "none";
+      contentEl.style.display = "block";
+
+      if (track.image) {
+        imageEl.src = track.image;
+        imageEl.style.display = "block";
+        imageFallbackEl.style.display = "none";
+      } else {
+        imageEl.style.display = "none";
+        imageFallbackEl.style.display = "block";
+      }
+
+      titleEl.textContent = track.name || "";
+      artistsEl.textContent = (track.artists || []).join(", ");
+
+      if (track.external_url) {
+        linkEl.href = track.external_url;
+        linkEl.style.display = "inline-flex";
+      } else {
+        linkEl.style.display = "none";
+      }
+
+      lastTrackId = track.id;
+      baseProgressMs = np.progress_ms || 0;
+      durationMs = track.duration_ms || 0;
+      isPlaying = !!np.is_playing;
+      serverTimeMs = srvMs || Date.now();
+      durationEl.textContent = fmt(durationMs);
+    }
+
+    function renderTick() {
+      if (!lastTrackId) return;
+
+      let est = baseProgressMs;
+      if (isPlaying && serverTimeMs) {
+        est = baseProgressMs + (Date.now() - serverTimeMs);
+      }
+      if (durationMs) {
+        est = Math.max(0, Math.min(durationMs, est));
+      } else {
+        est = Math.max(0, est);
+      }
+
+      timeEl.textContent = fmt(est);
+      if (durationMs) {
+        progressEl.style.width = Math.min(100, (est / durationMs) * 100) + "%";
+      } else {
+        progressEl.style.width = "0%";
+      }
+    }
+
+    async function poll() {
+      try {
+        const resp = await fetch(endpoint, { headers: { "Accept": "application/json" } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        const np = data.now_playing;
+        const srvMs = data.server_time_ms;
+        const nextTrackId = np && np.track ? np.track.id : null;
+
+        if (!nextTrackId) {
+          setEmpty();
+          return;
+        }
+
+        if (nextTrackId !== lastTrackId) {
+          setNowPlaying(np, srvMs);
+        } else {
+          baseProgressMs = np.progress_ms || baseProgressMs;
+          durationMs = (np.track && np.track.duration_ms) || durationMs;
+          isPlaying = !!np.is_playing;
+          serverTimeMs = srvMs || serverTimeMs;
+        }
+      } catch (e) {
+      }
+    }
+
+    {% if now_playing and now_playing.track %}
+      setNowPlaying({
+        is_playing: {{ now_playing.is_playing|yesno:"true,false" }},
+        progress_ms: {{ now_playing.progress_ms|default:"0" }},
+        track: {
+          id: "{{ now_playing.track.id|default:'' }}",
+          name: "{{ now_playing.track.name|default:''|escapejs }}",
+          artists: [{% for a in now_playing.track.artists %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+          album: "{{ now_playing.track.album|default:''|escapejs }}",
+          duration_ms: {{ now_playing.track.duration_ms|default:"0" }},
+          image: "{{ now_playing.track.image|default:''|escapejs }}",
+          external_url: "{{ now_playing.track.external_url|default:''|escapejs }}"
+        }
+      }, Date.now());
+    {% else %}
+      setEmpty();
+    {% endif %}
+
+    setInterval(renderTick, 1000);
+    poll();
+    setInterval(poll, 8000);
+  })();
+</script>
+
+<div class="section">
+  <h3>Top artists & tracks</h3>
+
+  {% if connected and spotify_profile %}
+    <div class="card" style="flex-direction:column; align-items:stretch;">
+      <div class="card-title">Top artists & tracks</div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div>
+          <div style="font-weight:700; margin-bottom: 6px;">Recent (short term)</div>
+
+          <div style="opacity:0.85; font-size: 13px; margin-bottom: 6px;">Artists</div>
+          {% if spotify_profile.top_artists_short %}
+            <div style="display:flex; flex-direction:column; gap: 8px;">
+              {% for a in spotify_profile.top_artists_short %}
+                <div style="display:flex; align-items:center; gap: 10px;">
+                  {% if a.image %}
+                    <img src="{{ a.image }}" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #6c5ce7;" />
+                  {% else %}
+                    <div style="width:32px;height:32px;border-radius:8px;border:1px solid #6c5ce7;background:#0D0D0D;"></div>
+                  {% endif %}
+                  <div style="font-size: 13px;">{{ a.name }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="opacity:0.75; font-size: 13px;">No recent top artists yet.</div>
+          {% endif %}
+
+          <div style="opacity:0.85; font-size: 13px; margin: 10px 0 6px;">Tracks</div>
+          {% if spotify_profile.top_tracks_short %}
+            <div style="display:flex; flex-direction:column; gap: 8px;">
+              {% for t in spotify_profile.top_tracks_short %}
+                <div style="display:flex; align-items:center; gap: 10px;">
+                  {% if t.image %}
+                    <img src="{{ t.image }}" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #6c5ce7;" />
+                  {% else %}
+                    <div style="width:32px;height:32px;border-radius:8px;border:1px solid #6c5ce7;background:#0D0D0D;"></div>
+                  {% endif %}
+                  <div style="min-width:0;">
+                    <div style="font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ t.name }}</div>
+                    <div style="opacity:0.8; font-size: 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ t.artists|join:", " }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="opacity:0.75; font-size: 13px;">No recent top tracks yet.</div>
+          {% endif %}
+        </div>
+
+        <div>
+          <div style="font-weight:700; margin-bottom: 6px;">All-time (long term)</div>
+
+          <div style="opacity:0.85; font-size: 13px; margin-bottom: 6px;">Artists</div>
+          {% if spotify_profile.top_artists_long %}
+            <div style="display:flex; flex-direction:column; gap: 8px;">
+              {% for a in spotify_profile.top_artists_long %}
+                <div style="display:flex; align-items:center; gap: 10px;">
+                  {% if a.image %}
+                    <img src="{{ a.image }}" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #6c5ce7;" />
+                  {% else %}
+                    <div style="width:32px;height:32px;border-radius:8px;border:1px solid #6c5ce7;background:#0D0D0D;"></div>
+                  {% endif %}
+                  <div style="font-size: 13px;">{{ a.name }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="opacity:0.75; font-size: 13px;">No long-term top artists yet.</div>
+          {% endif %}
+
+          <div style="opacity:0.85; font-size: 13px; margin: 10px 0 6px;">Tracks</div>
+          {% if spotify_profile.top_tracks_long %}
+            <div style="display:flex; flex-direction:column; gap: 8px;">
+              {% for t in spotify_profile.top_tracks_long %}
+                <div style="display:flex; align-items:center; gap: 10px;">
+                  {% if t.image %}
+                    <img src="{{ t.image }}" alt="" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #6c5ce7;" />
+                  {% else %}
+                    <div style="width:32px;height:32px;border-radius:8px;border:1px solid #6c5ce7;background:#0D0D0D;"></div>
+                  {% endif %}
+                  <div style="min-width:0;">
+                    <div style="font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ t.name }}</div>
+                    <div style="opacity:0.8; font-size: 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ t.artists|join:", " }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="opacity:0.75; font-size: 13px;">No long-term top tracks yet.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="opacity:0.75; font-size: 12px; margin-top: 12px;">
+        Updated: recent {% if spotify_profile.top_short_updated_at %}{{ spotify_profile.top_short_updated_at }}{% else %}—{% endif %} · all-time {% if spotify_profile.top_long_updated_at %}{{ spotify_profile.top_long_updated_at }}{% else %}—{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="card" style="flex-direction:column; align-items:stretch;">
+      <div class="card-title">Spotify not connected</div>
+      <div style="opacity:0.85; font-size: 13px;">Top items and listening activity aren’t available.</div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <a class="primary-link" href="{% url 'friends_list' %}">Back to friends</a>
+</div>
+
+{% endblock %}

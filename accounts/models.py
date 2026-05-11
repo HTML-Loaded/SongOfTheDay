@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 
 class Profile(models.Model):
@@ -43,7 +44,25 @@ class SpotifyProfile(models.Model):
 
     token_expires_at = models.DateTimeField(null=True, blank=True)
 
+    top_tracks_short = models.JSONField(blank=True, null=True)
+    top_tracks_long = models.JSONField(blank=True, null=True)
+    top_artists_short = models.JSONField(blank=True, null=True)
+    top_artists_long = models.JSONField(blank=True, null=True)
+
+    top_short_updated_at = models.DateTimeField(null=True, blank=True)
+    top_long_updated_at = models.DateTimeField(null=True, blank=True)
+
     def is_token_expired(self):
         if not self.token_expires_at:
             return True
         return timezone.now() >= self.token_expires_at
+
+    def needs_top_short_refresh(self):
+        if not self.top_short_updated_at:
+            return True
+        return timezone.now() - self.top_short_updated_at >= timedelta(hours=24)
+
+    def needs_top_long_refresh(self):
+        if not self.top_long_updated_at:
+            return True
+        return timezone.now() - self.top_long_updated_at >= timedelta(days=7)
