@@ -333,6 +333,266 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(420px, calc(100vw - 24px));
+      border-radius: 18px;
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.92);
+      box-shadow: 0 26px 60px rgba(3, 19, 166, 0.45);
+      padding: 14px;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 0 0 10px;
+      background: linear-gradient(90deg, #FFFFFF, #6c5ce7, #10dcac);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .reaction-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(108, 92, 231, 0.35);
+      background: rgba(13, 13, 13, 0.65);
+    }
+
+    .reaction-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      justify-content: center;
+    }
+
+    .emoji-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.8);
+      color: #FFFFFF;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 10px 22px rgba(3, 19, 166, 0.18);
+    }
+
+    .emoji-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(16, 220, 172, 0.8);
+      box-shadow: 0 16px 36px rgba(16, 220, 172, 0.12), 0 18px 40px rgba(108, 92, 231, 0.18);
+    }
+
+    .emoji-btn.active {
+      border-color: rgba(16, 220, 172, 0.95);
+      box-shadow: 0 0 0 3px rgba(16, 220, 172, 0.18), 0 18px 44px rgba(108, 92, 231, 0.22);
+    }
+
+    .reaction-summary {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .reaction-chip {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(108, 92, 231, 0.45);
+      background: rgba(13, 13, 13, 0.55);
+      color: #FFFFFF;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .reaction-chip:hover {
+      transform: translateY(-1px);
+      border-color: rgba(16, 220, 172, 0.75);
+      box-shadow: 0 14px 30px rgba(3, 19, 166, 0.22);
+    }
+
+    .caption-wrap {
+      margin-top: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.75);
+      box-shadow: 0 12px 28px rgba(3, 19, 166, 0.16);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .caption-wrap .reply-actions,
+    .caption-wrap .reply-compose,
+    .caption-wrap .reply-list {
+      display: none;
+    }
+
+    .caption-wrap.open .reply-actions,
+    .caption-wrap.open .reply-compose,
+    .caption-wrap.open .reply-list {
+      display: block;
+    }
+
+    .reply-actions {
+      padding: 0 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .reply-btn {
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.55);
+      color: #FFFFFF;
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.2px;
+    }
+
+    .reply-btn:hover {
+      border-color: rgba(16, 220, 172, 0.75);
+      box-shadow: 0 14px 30px rgba(3, 19, 166, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .reply-compose {
+      padding: 0 12px 12px;
+    }
+
+    .reply-compose textarea {
+      width: 100%;
+      min-height: 84px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.65);
+      color: #FFFFFF;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .reply-compose .reply-send {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .reply-compose .reply-send button {
+      border: 1px solid rgba(108, 92, 231, 0.55);
+      background: rgba(13, 13, 13, 0.55);
+      color: #FFFFFF;
+      border-radius: 999px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .reply-list {
+      padding: 0 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .reply-item {
+      border-radius: 12px;
+      border: 1px solid rgba(108, 92, 231, 0.35);
+      background: rgba(13, 13, 13, 0.55);
+      padding: 10px 12px;
+    }
+
+    .reply-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 6px;
+    }
+
+    .reply-body {
+      font-size: 13px;
+      line-height: 1.35;
+      opacity: 0.95;
+    }
+
+    .caption-wrap:hover {
+      border-color: rgba(16, 220, 172, 0.8);
+      box-shadow: 0 16px 36px rgba(16, 220, 172, 0.12), 0 18px 40px rgba(108, 92, 231, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .caption-preview {
+      padding: 10px 12px;
+      color: #FFFFFF;
+      opacity: 0.92;
+      font-size: 13px;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .caption-full {
+      padding: 0 12px;
+      max-height: 0;
+      overflow: hidden;
+      color: #FFFFFF;
+      opacity: 0.92;
+      font-size: 13px;
+      line-height: 1.45;
+      transition: max-height 220ms ease, padding 220ms ease;
+    }
+
+    .caption-wrap.open .caption-preview {
+      display: none;
+    }
+
+    .caption-wrap.open .caption-full {
+      padding: 10px 12px 12px;
+      max-height: 320px;
+    }
+
     .home-with-nav {
       padding-bottom: 92px;
     }
@@ -681,13 +941,63 @@
   </style>
 </head>
 
-<body>
+<body data-spotify-prompt="{{ spotify_prompt|default:0|yesno:'1,0' }}">
   <script>
     (function () {
       try {
         const offset = new Date().getTimezoneOffset();
         const maxAge = 60 * 60 * 24 * 365;
         document.cookie = `tz_offset=${offset}; path=/; max-age=${maxAge}`;
+      } catch (e) {}
+    })();
+  </script>
+
+  <script>
+    (function () {
+      try {
+        const body = document.body;
+        if (!body) return;
+        const shouldPrompt = body.getAttribute('data-spotify-prompt') === '1';
+        if (!shouldPrompt) return;
+        if (sessionStorage.getItem('spotify_prompt_dismissed') === '1') return;
+
+        let overlay = document.getElementById('modal-overlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'modal-overlay';
+          overlay.className = 'modal-overlay';
+          overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.classList.remove('show');
+          });
+          document.body.appendChild(overlay);
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div style="display:flex; justify-content: space-between; align-items:center; gap: 10px;">
+            <div class="modal-title" style="margin:0;">Connect Spotify</div>
+            <button type="button" id="spotify-prompt-close" class="emoji-btn" style="width:36px;height:36px;font-size:18px;">×</button>
+          </div>
+          <div style="opacity:0.9; margin-top: 10px; line-height: 1.35; font-size: 13px;">
+            Connect Spotify to search and share songs.
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap: 10px; margin-top: 14px;">
+            <a href="{% url 'connect_spotify' %}" class="reaction-chip" style="text-decoration:none;">Connect</a>
+          </div>
+        `;
+
+        overlay.innerHTML = '';
+        overlay.appendChild(modal);
+        overlay.classList.add('show');
+
+        const closeBtn = modal.querySelector('#spotify-prompt-close');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            sessionStorage.setItem('spotify_prompt_dismissed', '1');
+            overlay.classList.remove('show');
+          });
+        }
       } catch (e) {}
     })();
   </script>

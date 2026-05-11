@@ -1,0 +1,56 @@
+<li class="card" style="flex-direction: column; align-items: stretch;">
+    <div style="display:flex; justify-content: space-between; width:100%; gap: 10px; align-items: flex-start;">
+      <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
+        {% if item.share.user.profile.get_avatar_url %}
+          <img src="{{ item.share.user.profile.get_avatar_url }}" alt="" style="width:36px;height:36px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
+        {% else %}
+          <div style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 14px;">
+            {{ item.share.user.username|slice:":1"|upper }}
+          </div>
+        {% endif %}
+        <div style="min-width:0;">
+          <div class="card-title">{{ item.share.user.username }} shared</div>
+          <div style="opacity: 0.85; font-size: 13px;" class="js-local-datetime" data-iso="{{ item.share.created_at|date:'c' }}">{{ item.share.created_at }}</div>
+        </div>
+      </div>
+
+      <div class="reaction-summary" data-share-id="{{ item.share.id }}" data-can-react="1">
+        {% for r in item.top_reactions %}
+          <span class="reaction-chip" data-open-reactions="1">{{ r.count }} {% if r.emoji == 'heart' %}❤️{% elif r.emoji == 'laugh' %}😂{% elif r.emoji == 'wow' %}😮{% elif r.emoji == 'sad' %}😢{% elif r.emoji == 'angry' %}😡{% elif r.emoji == 'thumbs_up' %}👍{% elif r.emoji == 'fire' %}🔥{% elif r.emoji == '100' %}💯{% else %}{{ r.emoji }}{% endif %}</span>
+        {% endfor %}
+        {% if item.has_more_reactions %}
+          <span class="reaction-chip" data-open-reactions="1">+</span>
+        {% endif %}
+        {% if not item.top_reactions %}
+          <span class="reaction-chip" data-open-reactions="1">React</span>
+        {% endif %}
+      </div>
+    </div>
+
+  {% if item.embed_url %}
+    <div style="margin-top: 10px;">
+      <iframe style="border-radius: 12px" src="{{ item.embed_url }}" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+  {% else %}
+    <p style="margin: 10px 0 0;">{{ item.share.track_input }}</p>
+  {% endif %}
+
+  {% if item.share.caption %}
+    <div class="caption-wrap" role="button" tabindex="0" data-share-id="{{ item.share.id }}">
+      <div class="caption-preview"></div>
+      <div class="caption-full">{{ item.share.caption|linebreaksbr }}</div>
+      <div class="caption-raw" style="display:none;">{{ item.share.caption }}</div>
+      <div class="reply-actions" data-reply-ui="1">
+        <button type="button" class="reply-btn" data-reply-btn="1">Reply</button>
+      </div>
+      <div class="reply-compose" data-reply-ui="1" style="display:none;">
+        <textarea data-reply-body="1" placeholder="Write up to 4 sentences..."></textarea>
+        <div class="reply-send">
+          <button type="button" data-reply-send="1">Send</button>
+        </div>
+        <div data-reply-error="1" style="opacity:0.9; font-size:12px; margin-top: 6px; display:none;"></div>
+      </div>
+      <div class="reply-list" data-reply-ui="1"></div>
+    </div>
+  {% endif %}
+</li>

@@ -30,50 +30,253 @@
   {% csrf_token %}
   <input id="tz_offset_field" name="tz_offset" type="hidden" />
   <input name="track_input" type="text" placeholder="Spotify track URL or URI" />
-  <textarea name="caption" rows="3" placeholder="Add a caption (optional)"></textarea>
+  <textarea name="caption" rows="4" placeholder="Add a short message (3–4 sentences)"></textarea>
   <button id="share-btn" type="submit">Share</button>
 </form>
 
 {% if shares %}
   <div class="section">
-    <ul class="card-list">
+    <ul class="card-list" id="feed-list" data-next-cursor="{{ next_cursor|default:'' }}" data-next-cursor-id="{{ next_cursor_id|default:'' }}">
       {% for item in shares %}
-        <li class="card" style="flex-direction: column; align-items: stretch;">
-            <div style="display:flex; justify-content: space-between; width:100%; gap: 10px;">
-              <div style="display:flex; align-items:center; gap: 10px; min-width:0;">
-                {% if item.share.user.profile.get_avatar_url %}
-                  <img src="{{ item.share.user.profile.get_avatar_url }}" alt="" style="width:36px;height:36px;border-radius:999px;object-fit:cover;border:1px solid #6c5ce7;" />
-                {% else %}
-                  <div style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid #6c5ce7;background:#0D0D0D;font-weight:800; font-size: 14px;">
-                    {{ item.share.user.username|slice:":1"|upper }}
-                  </div>
-                {% endif %}
-                <div style="min-width:0;">
-                  <div class="card-title">{{ item.share.user.username }} shared</div>
-                  <div style="opacity: 0.85; font-size: 13px;" class="js-local-datetime" data-iso="{{ item.share.created_at|date:'c' }}">{{ item.share.created_at }}</div>
-                </div>
-              </div>
-            </div>
-
-          {% if item.embed_url %}
-            <div style="margin-top: 10px;">
-              <iframe style="border-radius: 12px" src="{{ item.embed_url }}" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-            </div>
-          {% else %}
-            <p style="margin: 10px 0 0;">{{ item.share.track_input }}</p>
-          {% endif %}
-
-          {% if item.share.caption %}
-            <p style="margin: 10px 0 0;">{{ item.share.caption }}</p>
-          {% endif %}
-        </li>
+        {% include "feed/_share_card.html" with item=item %}
       {% endfor %}
     </ul>
+    <div id="feed-loading" style="display:none; text-align:center; opacity:0.85; padding: 14px 0;">Loading…</div>
+    <div id="feed-sentinel" style="height: 1px;"></div>
   </div>
 {% endif %}
 
 <script>
   (function () {
+    const csrfToken = (document.cookie.split('; ').find((row) => row.startsWith('csrftoken=')) || '').split('=')[1] || '';
+
+    function escapeHtml(text) {
+      return (text || '').replace(/[&<>"]/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;'
+      }[ch]));
+    }
+
+    const emojiMap = {
+      heart: '❤️',
+      laugh: '😂',
+      wow: '😮',
+      sad: '😢',
+      angry: '😡',
+      thumbs_up: '👍',
+      fire: '🔥',
+      100: '💯',
+    };
+
+    function timeAgo(iso) {
+      const dt = new Date(iso);
+      if (isNaN(dt.getTime())) return '';
+      const diffMs = Date.now() - dt.getTime();
+      const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+      const min = Math.floor(diffSec / 60);
+      const hour = Math.floor(diffSec / 3600);
+      const day = Math.floor(diffSec / 86400);
+      if (day >= 1) return `${day} day${day === 1 ? '' : 's'} ago`;
+      if (hour >= 1) return `${hour} hour${hour === 1 ? '' : 's'} ago`;
+      return `${min} min ago`;
+    }
+
+    function initLocalDatetimes(root) {
+      (root || document).querySelectorAll('.js-local-datetime[data-iso]').forEach((el) => {
+        const iso = el.getAttribute('data-iso');
+        if (!iso) return;
+        const dt = new Date(iso);
+        if (isNaN(dt.getTime())) return;
+        el.textContent = dt.toLocaleString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+      });
+    }
+
+    function openModal(contentEl) {
+      let overlay = document.getElementById('modal-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'modal-overlay';
+        overlay.className = 'modal-overlay';
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) overlay.classList.remove('show');
+        });
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = '';
+      overlay.appendChild(contentEl);
+      overlay.classList.add('show');
+      return overlay;
+    }
+
+    function buildReactionsModal(shareId, canReact, counts, mine) {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `<div class="modal-title">Reactions</div>`;
+
+      if (canReact) {
+        const buttons = document.createElement('div');
+        buttons.className = 'reaction-buttons';
+
+        const enableCustomEmoji = false;
+        const presetKeys = ['heart', 'laugh', 'wow', 'sad', 'angry', 'thumbs_up', 'fire', '100'];
+        const buttonByKey = {};
+
+        async function submitReaction(emojiValue) {
+          const form = new URLSearchParams();
+          form.set('emoji', emojiValue);
+          const resp = await fetch(`/feed/react/${shareId}/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': csrfToken,
+            },
+            body: form.toString(),
+          });
+          if (!resp.ok) return;
+          const data = await resp.json();
+          updateReactionSummary(shareId, data.counts);
+          mine = data.mine || [];
+          presetKeys.forEach((k) => {
+            const b = buttonByKey[k];
+            if (!b) return;
+            b.classList.toggle('active', mine.includes(k));
+          });
+          renderCounts(list, data.counts);
+        }
+
+        presetKeys.forEach((key) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'emoji-btn' + (mine.includes(key) ? ' active' : '');
+          btn.textContent = emojiMap[key];
+          btn.addEventListener('click', () => submitReaction(key));
+          buttonByKey[key] = btn;
+          buttons.appendChild(btn);
+        });
+
+        if (enableCustomEmoji) {
+          const addWrap = document.createElement('div');
+          addWrap.style.display = 'flex';
+          addWrap.style.flexDirection = 'column';
+          addWrap.style.alignItems = 'center';
+          addWrap.style.gap = '10px';
+
+          const addBtn = document.createElement('button');
+          addBtn.type = 'button';
+          addBtn.className = 'emoji-btn';
+          addBtn.textContent = '+';
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.inputMode = 'text';
+          input.autocomplete = 'off';
+          input.placeholder = 'Pick an emoji';
+          input.maxLength = 20;
+          input.style.display = 'none';
+          input.style.width = '170px';
+          input.style.borderRadius = '999px';
+          input.style.border = '1px solid rgba(108, 92, 231, 0.55)';
+          input.style.background = 'rgba(13, 13, 13, 0.8)';
+          input.style.color = '#FFFFFF';
+          input.style.padding = '10px 12px';
+          input.style.outline = 'none';
+
+          addBtn.addEventListener('click', () => {
+            const showing = input.style.display !== 'none';
+            input.style.display = showing ? 'none' : 'block';
+            if (!showing) {
+              input.value = '';
+              input.focus();
+            }
+          });
+
+          input.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+            const value = (input.value || '').trim();
+            if (!value) return;
+            input.style.display = 'none';
+            await submitReaction(value);
+          });
+
+          addWrap.appendChild(addBtn);
+          addWrap.appendChild(input);
+          buttons.appendChild(addWrap);
+        }
+        modal.appendChild(buttons);
+      }
+
+      const list = document.createElement('div');
+      list.style.display = 'flex';
+      list.style.flexDirection = 'column';
+      list.style.gap = '10px';
+      modal.appendChild(list);
+
+      function renderCounts(target, items) {
+        target.innerHTML = '';
+        if (!items.length) {
+          const empty = document.createElement('div');
+          empty.style.opacity = '0.85';
+          empty.textContent = 'No reactions yet.';
+          target.appendChild(empty);
+          return;
+        }
+        items.forEach((r) => {
+          const row = document.createElement('div');
+          row.className = 'reaction-row';
+          const emoji = emojiMap[r.emoji] || r.emoji;
+          row.innerHTML = `<div style="display:flex; gap:10px; align-items:center;"><div style="font-size:20px;">${emoji}</div><div style="opacity:0.9;">${r.emoji}</div></div><div style="font-weight:800;">${r.count}</div>`;
+          target.appendChild(row);
+        });
+      }
+
+      renderCounts(list, counts);
+      return modal;
+    }
+
+    function updateReactionSummary(shareId, counts) {
+      const container = document.querySelector(`.reaction-summary[data-share-id="${shareId}"]`);
+      if (!container) return;
+      const sorted = (counts || []).slice().sort((a, b) => (b.count - a.count) || String(a.emoji).localeCompare(String(b.emoji)));
+      const top = sorted.slice(0, 3);
+      const hasMore = sorted.length > 3;
+      const canReact = container.getAttribute('data-can-react') === '1';
+
+      const chips = [];
+      top.forEach((r) => {
+        const emoji = emojiMap[r.emoji] || r.emoji;
+        chips.push(`<span class="reaction-chip" data-open-reactions="1">${r.count} ${emoji}</span>`);
+      });
+      if (hasMore) chips.push(`<span class="reaction-chip" data-open-reactions="1">+</span>`);
+      if (canReact && chips.length === 0) chips.push(`<span class="reaction-chip" data-open-reactions="1">React</span>`);
+      container.innerHTML = chips.join('');
+    }
+
+    function initReactionSummary(el) {
+      if (!el || el.__reactionBound) return;
+      el.__reactionBound = true;
+      el.addEventListener('click', async () => {
+        const shareId = el.getAttribute('data-share-id');
+        if (!shareId) return;
+        const resp = await fetch(`/feed/reactions/${shareId}/`, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const modal = buildReactionsModal(data.share_id, data.can_react, data.counts || [], data.mine || []);
+        openModal(modal);
+      });
+    }
+
+    function initReactionSummaries(root) {
+      (root || document).querySelectorAll('.reaction-summary').forEach(initReactionSummary);
+    }
+
     const tzField = document.getElementById('tz_offset_field');
     if (tzField) tzField.value = String(new Date().getTimezoneOffset());
 
@@ -96,19 +299,209 @@
       setInterval(tick, 1000);
     }
 
-    document.querySelectorAll('.js-local-datetime[data-iso]').forEach((el) => {
-      const iso = el.getAttribute('data-iso');
-      if (!iso) return;
-      const dt = new Date(iso);
-      if (isNaN(dt.getTime())) return;
-      el.textContent = dt.toLocaleString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
+    function initCaptionWrap(wrap) {
+      if (!wrap || wrap.__captionBound) return;
+      wrap.__captionBound = true;
+      const rawEl = wrap.querySelector('.caption-raw');
+      const caption = rawEl ? (rawEl.textContent || '') : '';
+      const previewEl = wrap.querySelector('.caption-preview');
+      if (previewEl) {
+        const hasNewline = /\r|\n/.test(caption);
+        previewEl.textContent = hasNewline ? (caption.split(/\r?\n/)[0] || '') : caption;
+      }
+      const shareId = wrap.getAttribute('data-share-id');
+      let repliesLoaded = false;
+
+      async function loadReplies() {
+        if (!shareId) return;
+        const list = wrap.querySelector('.reply-list');
+        if (!list) return;
+        const resp = await fetch(`/feed/replies/${shareId}/`, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        renderReplies(data.replies || []);
+      }
+
+      function renderReplies(items) {
+        const list = wrap.querySelector('.reply-list');
+        if (!list) return;
+        if (!items.length) {
+          list.innerHTML = '';
+          return;
+        }
+        list.innerHTML = items.map((r) => {
+          const when = timeAgo(r.created_at);
+          const body = escapeHtml(r.body || '').replace(/\n/g, '<br />');
+          return `
+            <div class="reply-item">
+              <div class="reply-meta"><div style="font-weight:800;">${escapeHtml(r.username || '')}</div><div style="opacity:0.85;">${escapeHtml(when)}</div></div>
+              <div class="reply-body">${body}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function sendReply() {
+        const compose = wrap.querySelector('.reply-compose');
+        const textarea = wrap.querySelector('[data-reply-body="1"]');
+        const errorEl = wrap.querySelector('[data-reply-error="1"]');
+        if (!shareId || !textarea) return;
+        const body = (textarea.value || '').trim();
+        if (!body) return;
+
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+
+        const form = new URLSearchParams();
+        form.set('body', body);
+        const resp = await fetch(`/feed/reply/${shareId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+          },
+          body: form.toString(),
+        });
+
+        if (!resp.ok) {
+          if (errorEl) {
+            errorEl.style.display = 'block';
+            errorEl.textContent = resp.status === 400 ? 'Reply must be up to 4 sentences.' : 'Reply failed.';
+          }
+          return;
+        }
+
+        const data = await resp.json();
+        textarea.value = '';
+        if (compose) compose.style.display = 'none';
+        renderReplies(data.replies || []);
+      }
+
+      const toggle = async (e, forceOpen) => {
+        const clickedInsideUi = !!(e && e.target && e.target.closest && e.target.closest('[data-reply-ui="1"]'));
+        if (clickedInsideUi) return;
+        const isOpen = wrap.classList.contains('open');
+        const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+        wrap.classList.toggle('open', nextOpen);
+        if (nextOpen && !repliesLoaded) {
+          repliesLoaded = true;
+          await loadReplies();
+        }
+      };
+
+      wrap.addEventListener('click', (e) => {
+        toggle(e);
       });
-    });
+      wrap.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle(e);
+        }
+      });
+
+      const replyBtn = wrap.querySelector('[data-reply-btn="1"]');
+      const compose = wrap.querySelector('.reply-compose');
+      if (replyBtn && compose) {
+        replyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          compose.style.display = compose.style.display === 'none' ? 'block' : 'none';
+          const textarea = wrap.querySelector('[data-reply-body="1"]');
+          if (compose.style.display !== 'none' && textarea) textarea.focus();
+        });
+      }
+
+      const sendBtn = wrap.querySelector('[data-reply-send="1"]');
+      if (sendBtn) {
+        sendBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sendReply();
+        });
+      }
+
+      const textarea = wrap.querySelector('[data-reply-body="1"]');
+      if (textarea) {
+        textarea.addEventListener('click', (e) => e.stopPropagation());
+        textarea.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            sendReply();
+          }
+          e.stopPropagation();
+        });
+      }
+    }
+
+    function initCaptionWraps(root) {
+      (root || document).querySelectorAll('.caption-wrap').forEach(initCaptionWrap);
+    }
+
+    initLocalDatetimes(document);
+    initReactionSummaries(document);
+    initCaptionWraps(document);
+
+    (function initInfiniteScroll() {
+      const list = document.getElementById('feed-list');
+      const sentinel = document.getElementById('feed-sentinel');
+      const loadingEl = document.getElementById('feed-loading');
+      if (!list || !sentinel) return;
+
+      let loading = false;
+      let hasMore = true;
+
+      async function loadNext() {
+        if (loading || !hasMore) return;
+        const cursor = list.getAttribute('data-next-cursor') || '';
+        const cursorId = list.getAttribute('data-next-cursor-id') || '';
+        if (!cursor || !cursorId) return;
+        loading = true;
+        if (loadingEl) loadingEl.style.display = 'block';
+        try {
+          const resp = await fetch(`/feed/page/?cursor=${encodeURIComponent(cursor)}&cursor_id=${encodeURIComponent(cursorId)}`, {
+            headers: { 'Accept': 'application/json' },
+          });
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const html = (data && data.html) || '';
+          if (html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const appended = [];
+            while (tmp.firstElementChild) {
+              const node = tmp.firstElementChild;
+              appended.push(node);
+              list.appendChild(node);
+            }
+            appended.forEach((node) => {
+              initLocalDatetimes(node);
+              initReactionSummaries(node);
+              initCaptionWraps(node);
+            });
+          }
+          hasMore = !!data.has_more;
+          if (data.next_cursor && data.next_cursor_id) {
+            list.setAttribute('data-next-cursor', data.next_cursor);
+            list.setAttribute('data-next-cursor-id', String(data.next_cursor_id));
+          }
+          if (!hasMore) {
+            list.removeAttribute('data-next-cursor');
+            list.removeAttribute('data-next-cursor-id');
+          }
+        } finally {
+          loading = false;
+          if (loadingEl) loadingEl.style.display = 'none';
+        }
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) loadNext();
+        });
+      }, { rootMargin: '800px 0px' });
+
+      observer.observe(sentinel);
+    })();
 
     const toast = document.getElementById('post-limit-toast');
     if (toast) {
@@ -135,14 +528,6 @@
     let lastRequestId = 0;
     let timer = null;
 
-    function escapeHtml(text) {
-      return (text || '').replace(/[&<>"]/g, (ch) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;'
-      }[ch]));
-    }
 
     function setVisible(visible) {
       results.style.display = visible ? 'block' : 'none';
