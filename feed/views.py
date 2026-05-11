@@ -164,6 +164,8 @@ def feed(request):
                     },
                 )
                 if not created:
+                    SongReply.objects.filter(share=share).delete()
+                    SongReaction.objects.filter(share=share).delete()
                     share.track_input = track_input
                     share.caption = caption
                     share.created_at = now()

@@ -35,22 +35,20 @@
     <p style="margin: 10px 0 0;">{{ item.share.track_input }}</p>
   {% endif %}
 
-  {% if item.share.caption %}
-    <div class="caption-wrap" role="button" tabindex="0" data-share-id="{{ item.share.id }}">
-      <div class="caption-preview"></div>
-      <div class="caption-full">{{ item.share.caption|linebreaksbr }}</div>
-      <div class="caption-raw" style="display:none;">{{ item.share.caption }}</div>
-      <div class="reply-actions" data-reply-ui="1">
-        <button type="button" class="reply-btn" data-reply-btn="1">Reply</button>
-      </div>
-      <div class="reply-compose" data-reply-ui="1" style="display:none;">
-        <textarea data-reply-body="1" placeholder="Write up to 4 sentences..."></textarea>
-        <div class="reply-send">
-          <button type="button" data-reply-send="1">Send</button>
-        </div>
-        <div data-reply-error="1" style="opacity:0.9; font-size:12px; margin-top: 6px; display:none;"></div>
-      </div>
-      <div class="reply-list" data-reply-ui="1"></div>
+  <div class="caption-wrap" role="button" tabindex="0" data-share-id="{{ item.share.id }}">
+    <div class="caption-preview"></div>
+    <div class="caption-full">{% if item.share.caption %}{{ item.share.caption|linebreaksbr }}{% endif %}</div>
+    <div class="caption-raw" style="display:none;">{% if item.share.caption %}{{ item.share.caption }}{% endif %}</div>
+    <div class="reply-actions" data-reply-ui="1">
+      <button type="button" class="reply-btn" data-reply-btn="1">Reply</button>
     </div>
-  {% endif %}
+    <div class="reply-compose" data-reply-ui="1" style="display:none;">
+      <textarea data-reply-body="1" placeholder="Write up to 4 sentences..."></textarea>
+      <div class="reply-send">
+        <button type="button" data-reply-send="1">Send</button>
+      </div>
+      <div data-reply-error="1" style="opacity:0.9; font-size:12px; margin-top: 6px; display:none;"></div>
+    </div>
+    <div class="reply-list" data-reply-ui="1"></div>
+  </div>
 </li>

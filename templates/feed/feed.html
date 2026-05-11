@@ -307,7 +307,8 @@
       const previewEl = wrap.querySelector('.caption-preview');
       if (previewEl) {
         const hasNewline = /\r|\n/.test(caption);
-        previewEl.textContent = hasNewline ? (caption.split(/\r?\n/)[0] || '') : caption;
+        const firstLine = hasNewline ? (caption.split(/\r?\n/)[0] || '') : caption;
+        previewEl.textContent = firstLine.trim() ? firstLine : 'Replies';
       }
       const shareId = wrap.getAttribute('data-share-id');
       let repliesLoaded = false;
